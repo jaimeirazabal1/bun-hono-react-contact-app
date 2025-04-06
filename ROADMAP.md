@@ -4,7 +4,7 @@
 
 ### 1. Funcionalidades de Búsqueda y Filtrado (En Desarrollo)
 - [x] Búsqueda en tiempo real
-- [ ] Filtros avanzados por categorías
+- [x] Filtros avanzados por categorías
 - [ ] Ordenamiento por diferentes campos
 - [ ] Historial de búsquedas recientes
 
