@@ -2,19 +2,35 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PhoneIcon, EnvelopeIcon, MapPinIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import { contactsApi, Contact } from '../services/api';
+import SearchBar from './SearchBar';
+import CategoryFilter from './CategoryFilter';
+import { useState, useCallback } from 'react';
 
 export default function ContactList() {
   const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('todas');
   
-  const { data: contacts = [], isLoading, error } = useQuery({
-    queryKey: ['contactos'],
-    queryFn: contactsApi.getAll,
-  });
+  // Usar useCallback para evitar recreaciones innecesarias de los callbacks
+  const handleSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+  }, []);
 
+  const handleCategoryChange = useCallback((category: string) => {
+    setSelectedCategory(category);
+  }, []);
+
+  const { data: contacts = [], isLoading, error } = useQuery({
+    queryKey: ['contacts', searchTerm, selectedCategory],
+    queryFn: () => contactsApi.getAll(searchTerm, selectedCategory),
+    staleTime: 5000,
+    placeholderData: (previousData) => previousData,
+  });
+  console.log('contacts',contacts)
   const deleteMutation = useMutation({
     mutationFn: contactsApi.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contactos'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
   });
 
@@ -64,55 +80,70 @@ export default function ContactList() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {contacts.length > 0 ? contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className="card group animate-slide-in"
-          >
-            <div className="flex justify-between">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {contact.nombre} {contact.apellido}
-                </h3>
-              </div>
-              <div className="flex space-x-2">
-                <Link
-                  to={`/contactos/${contact.id}/editar`}
-                  className="p-1 text-gray-400 hover:text-primary-600"
-                >
-                  <PencilIcon className="h-5 w-5" />
-                </Link>
-                <button
-                  onClick={() => handleDelete(contact.id)}
-                  className="p-1 text-gray-400 hover:text-red-600"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
+      <div className="mt-4 space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
+        <SearchBar onSearch={handleSearch} />
+        <CategoryFilter 
+          selectedCategory={selectedCategory} 
+          onCategoryChange={handleCategoryChange} 
+        />
+      </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center text-sm">
-                <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
-                <span>{contact.telefono}</span>
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {contacts.length > 0 ? (
+          contacts.map((contact: Contact) => (
+            <div
+              key={contact.id}
+              className="card group animate-slide-in"
+            >
+              <div className="flex justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {contact.nombre} {contact.apellido}
+                  </h3>
+                  {contact.categoria && contact.categoria !== 'general' && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 mt-1">
+                      {contact.categoria}
+                    </span>
+                  )}
+                </div>
+                <div className="flex space-x-2">
+                  <Link
+                    to={`/contactos/${contact.id}/editar`}
+                    className="p-1 text-gray-400 hover:text-primary-600"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(contact.id)}
+                    className="p-1 text-gray-400 hover:text-red-600"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-              {contact.email && (
+
+              <div className="mt-4 space-y-3">
                 <div className="flex items-center text-sm">
-                  <EnvelopeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <span>{contact.email}</span>
+                  <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
+                  <span>{contact.telefono}</span>
                 </div>
-              )}
-              {contact.direccion && (
-                <div className="flex items-center text-sm">
-                  <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
-                  <span>{contact.direccion}</span>
-                </div>
-              )}
+                {contact.email && (
+                  <div className="flex items-center text-sm">
+                    <EnvelopeIcon className="h-5 w-5 text-gray-400 mr-2" />
+                    <span>{contact.email}</span>
+                  </div>
+                )}
+                {contact.direccion && (
+                  <div className="flex items-center text-sm">
+                    <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
+                    <span>{contact.direccion}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )) : (
-          <div className="text-center py-12">
+          ))
+        ) : (
+          <div className="text-center py-12 col-span-full">
             <div className="text-gray-600 text-xl">No hay contactos</div>
           </div>
         )}

@@ -1,12 +1,15 @@
 # Etapa de construcción
-FROM node:18-alpine AS builder
+FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json .
+COPY package-lock.json .
+
 RUN npm install
 
 COPY . .
+
 RUN npm run build
 
 # Etapa de producción
@@ -17,4 +20,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
 
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]
+
+CMD ["npm", "run", "preview"] 

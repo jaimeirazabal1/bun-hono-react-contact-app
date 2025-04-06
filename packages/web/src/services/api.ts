@@ -1,17 +1,9 @@
 import axios from 'axios';
+import { Contact, Categoria } from '../types';
 
 const api = axios.create({
   baseURL: 'http://localhost:3000/api',
 });
-
-export interface Contact {
-  id: number;
-  nombre: string;
-  apellido: string;
-  telefono: string;
-  email?: string;
-  direccion?: string;
-}
 
 export interface ContactInput {
   nombre: string;
@@ -24,26 +16,39 @@ export interface ContactInput {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const contactsApi = {
-  getAll: async (): Promise<Contact[]> => {
-    const response = await fetch(`${API_URL}/contactos`);
-    if (!response.ok) {
-      throw new Error('Error al obtener los contactos');
+  getAll: async (search?: string, categoria_id?: string) => {
+    let url = `${API_URL}/contactos`;
+    const params = new URLSearchParams();
+    
+    if (search) {
+      params.append('search', search);
     }
-    const result = await response.json();
-    return result ? result.data : [];
+    
+    if (categoria_id && categoria_id !== 'todas') {
+      params.append('categoria_id', categoria_id);
+    }
+    
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Error al obtener contactos');
+    }
+    const data = await response.json();
+    return data.data || [];
   },
 
-  getById: async (id: number): Promise<Contact> => {
+  getById: async (id: string) => {
     const response = await fetch(`${API_URL}/contactos/${id}`);
     if (!response.ok) {
       throw new Error('Error al obtener el contacto');
     }
-    const result = await response.json();
-    return result ? result.data : null;
-    // return response.json();
+    return response.json();
   },
 
-  create: async (contact: Omit<Contact, 'id'>): Promise<Contact> => {
+  create: async (contact: Omit<Contact, 'id'>) => {
     const response = await fetch(`${API_URL}/contactos`, {
       method: 'POST',
       headers: {
@@ -57,7 +62,7 @@ export const contactsApi = {
     return response.json();
   },
 
-  update: async (id: number, contact: Partial<Contact>): Promise<Contact> => {
+  update: async (id: string, contact: Omit<Contact, 'id'>) => {
     const response = await fetch(`${API_URL}/contactos/${id}`, {
       method: 'PUT',
       headers: {
@@ -71,12 +76,21 @@ export const contactsApi = {
     return response.json();
   },
 
-  delete: async (id: number): Promise<void> => {
+  delete: async (id: string) => {
     const response = await fetch(`${API_URL}/contactos/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) {
       throw new Error('Error al eliminar el contacto');
     }
+    return response.json();
   },
+
+  getCategorias: async () => {
+    const response = await fetch(`${API_URL}/contactos/categorias`);
+    if (!response.ok) {
+      throw new Error('Error al obtener categorías');
+    }
+    return response.json();
+  }
 }; 

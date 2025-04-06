@@ -8,12 +8,16 @@ import swaggerDoc from './swagger.json';
 
 // Configuración de la base de datos
 const pool = new Pool({
-  connectionString: 'postgres://admin:password@localhost:5432/directorio'
+  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/contactos_db'
 });
 
 // Verificar conexión a la base de datos
 pool.on('error', (err) => {
   console.error('Error inesperado en el pool de PostgreSQL', err);
+});
+
+pool.on('connect', () => {
+  console.log('Conexión exitosa a la base de datos');
 });
 
 // Inicializar la app
@@ -55,7 +59,7 @@ app.get('/', async (c) => {
 });
 
 // Montar las rutas de contactos
-app.route('/api', contactosRoutes);
+app.route('/api/contactos', contactosRoutes);
 
 // Exportar el pool de conexión
 export { pool };
